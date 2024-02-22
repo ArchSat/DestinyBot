@@ -28,4 +28,3 @@
       sh 'docker compose ps'
     }
   }
-}

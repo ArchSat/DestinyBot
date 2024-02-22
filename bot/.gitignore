@@ -1,0 +1,11 @@
+/venv
+/logs
+/.idea
+/config/google_credentials.json
+
+/test.py
+
+/*.env
+*.json
+*.db
+*.log

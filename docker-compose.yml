@@ -1,0 +1,72 @@
+version: '3'
+
+volumes:
+  site:
+    driver: local
+  rabbit:
+    driver: local
+  db:
+    driver: local
+
+services:
+  rabbit:
+    build: rabbit
+    restart: unless-stopped
+    hostname: rabbitmq
+    env_file:
+      - .env
+    volumes:
+      - rabbit:/var/lib/rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    network_mode: "host"
+
+  postgres:
+    build: postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d destiny_bot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    network_mode: "host"
+
+  bot:
+    build: ./bot/
+    container_name: 'DiscordBot'
+    restart: unless-stopped
+    command:
+      python ./main.py
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - rabbit
+    network_mode: "host"
+
+  site:
+    build: site/
+    container_name: 'RegistrationSite'
+    restart: unless-stopped
+    command: gunicorn run:app --bind 0.0.0.0:8000
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - rabbit
+    network_mode: "host"
